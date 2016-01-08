@@ -195,7 +195,7 @@ def test():
     parsearg()
     login()
     find_investment()
-    wait_till_can_invest()
+    #wait_till_can_invest()
     submit_tender()
     sys.exit()
 
