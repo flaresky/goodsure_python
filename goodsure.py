@@ -25,6 +25,9 @@ PayMoney = None
 WaitTime = None
 TimeDuration = None
 MinPerCent = None
+BorrowTypes = None
+Tid = None
+Shoudong = None
 
 def print_with_time(str):
     print datetime.datetime.today().strftime("%Y-%m-%d %H:%M:%S") + ' ',
@@ -110,16 +113,30 @@ def get_balance(data):
     else:
         print_with_time("PayMoney=%d"%(PayMoney))
 
+def get_table_class(table):
+    for parent in table.parents:
+        try:
+            return ' '.join(parent['class'])
+        except:
+            pass
+    for parent in table.previous_siblings:
+        try:
+            return ' '.join(parent['class'])
+        except:
+            pass
+    return ''
+
 def find_investment():
-    global FindInvestTime, TimeDuration, MinPerCent
-    borrow_types = [6, 0] #微信和普通标
+    global FindInvestTime, TimeDuration, MinPerCent, BorrowTypes, Shoudong
+#     borrow_types = [6, 0] #微信和普通标
 #     borrow_types = [5] #新手标
     while True:
-        for borrow_type in borrow_types:
+        for borrow_type in BorrowTypes:
             response = br.open('http://www.goodsure.cn//invest_list/main.html?borrow_type='+str(borrow_type))
             data = response.read().decode(br.encoding())
             soup = BeautifulSoup(data)
             for table in soup.find_all('table'):
+                table_class = get_table_class(table)
                 title = find_element(table, 'a').string
                 lilvdiv = find_element(table, 'span', {'class':"f14 green"}, 1)
                 lilv = float(get_first_string(lilvdiv))
@@ -129,10 +146,17 @@ def find_investment():
                 percent = float(percent[:-1])
                 div = div.next_sibling.next_sibling
                 start_str = get_first_string(div)
-                if duration <= TimeDuration and lilv >= MinPerCent and percent < 100 and start_str == u'立即投标':
+                Gotya = False
+                if Shoudong == True:
+                    if table_class.find("list_shou") >= 0 and percent < 100:
+                        Gotya = True
+                else:
+                    if (TimeDuration == 0 or duration == TimeDuration) and lilv >= MinPerCent and percent < 100 and start_str == u'立即投标':
+                        Gotya = True
+                if Gotya:
                     a = find_element(table, 'a')
                     link = a['href']
-                    print_with_time('Find valid investment %s %.1f%% %d month'%(title, lilv, duration))
+                    print_with_time('Find valid investment %s %.1f%% %d month, percent %.2f%%'%(title, lilv, duration, percent))
                     br.open(link)
                     return
         print_with_time('Not found valid investment')
@@ -144,9 +168,10 @@ def submit_tender(tid=None):
     tender_remain = sys.maxint
     if tid is not None:
         br.open('http://www.goodsure.cn/invest/%d.html'%(tid))
+    url = br.geturl()
     while True:
-        while time.time() - LastSubmitTime < 1:
-            sleep(0.1)
+#         while time.time() - LastSubmitTime < 1:
+#             sleep(0.1)
         LastSubmitTime = time.time()
         br.select_form(nr=0)
         money = str(PayMoney)
@@ -160,10 +185,14 @@ def submit_tender(tid=None):
         if message is None:
             print_with_time(data)
             break
-        if message.find(u'此标已满') >= 0 or message.find(u'投标成功') >= 0 or message.find(u'此标尚未通过审核') >= 0 or message.find(u'不满足投标条件') >= 0:
+        # or message.find(u'此标尚未通过审核') >= 0
+        if message.find(u'此标已满') >= 0 or message.find(u'投标成功') >= 0 or message.find(u'不满足投标条件') >= 0:
             break
         check_run_time()
-        br.back()
+        try:
+            br.back()
+        except:
+            br.open(url)
 
 def wait_till_can_invest():
     global WaitTime
@@ -172,31 +201,41 @@ def wait_till_can_invest():
         time.sleep(0.1)
 
 def parsearg():
-    global PayMoney, WaitTime, TimeDuration, MinPerCent
+    global PayMoney, WaitTime, TimeDuration, MinPerCent, BorrowTypes, Tid, Shoudong
     parser = argparse.ArgumentParser(description='goodsure auto invest')
+    parser.add_argument('-i', '--tid', required=False, type=int, help='tender id')
     parser.add_argument('-m', '--pay_money', required=False, type=int, default=0, help='money you want to invest')
     parser.add_argument('-w', '--wait_time', required=False, type=float, default=0, help='wait time')
-    parser.add_argument('-t', '--time_duration', required=False, type=int, default=12, help='month time duration')
+    parser.add_argument('-t', '--time_duration', required=False, type=int, default=0, help='month time duration')
     parser.add_argument('-p', '--percent', required=False, type=float, default=12, help='min percent')
+    parser.add_argument('-b', '--borrow_types', required=False, type=int, nargs='*', default=[6, 0], help='borrow_types')
+    parser.add_argument('-s', '--shoudong', required=False, action='store_true', help='find shoudong')
     res = parser.parse_args()
     PayMoney = res.pay_money
     WaitTime = res.wait_time
     TimeDuration = res.time_duration
     MinPerCent = res.percent
+    BorrowTypes = res.borrow_types
+    Tid = res.tid
+    Shoudong = res.shoudong
 
 def main():
+    global Tid
     parsearg()
     login()
-    find_investment()
-    wait_till_can_invest()
-    submit_tender()
+    if Tid is None:
+        find_investment()
+        wait_till_can_invest()
+        submit_tender()
+    else:
+        submit_tender(Tid)
 
 def test():
     parsearg()
-    login()
+#     login()
     find_investment()
     #wait_till_can_invest()
-    submit_tender()
+#     submit_tender()
     sys.exit()
 
 if __name__ == '__main__':
