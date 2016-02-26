@@ -203,13 +203,13 @@ def wait_till_can_invest():
 def parsearg():
     global PayMoney, WaitTime, TimeDuration, MinPerCent, BorrowTypes, Tid, Shoudong
     parser = argparse.ArgumentParser(description='goodsure auto invest')
-    parser.add_argument('-i', '--tid', required=False, type=int, help='tender id')
-    parser.add_argument('-m', '--pay_money', required=False, type=int, default=0, help='money you want to invest')
+    parser.add_argument('-i', '--tid', required=False, type=int, help=u'指定id，不用找标')
+    parser.add_argument('-m', '--pay_money', required=False, type=int, default=0, help=u'指定投多少钱，不指定投所有余额')
     parser.add_argument('-w', '--wait_time', required=False, type=float, default=0, help='wait time')
-    parser.add_argument('-t', '--time_duration', required=False, type=int, default=0, help='month time duration')
-    parser.add_argument('-p', '--percent', required=False, type=float, default=12, help='min percent')
-    parser.add_argument('-b', '--borrow_types', required=False, type=int, nargs='*', default=[6, 0], help='borrow_types')
-    parser.add_argument('-s', '--shoudong', required=False, action='store_true', help='find shoudong')
+    parser.add_argument('-t', '--time_duration', required=False, type=int, default=0, help=u'指定投几月标')
+    parser.add_argument('-p', '--percent', required=False, type=float, default=12, help=u'最低收益')
+    parser.add_argument('-b', '--borrow_types', required=False, type=int, nargs='*', default=[0], help='borrow_types')
+    parser.add_argument('-s', '--shoudong', required=False, action='store_true', help=u'只投手动标')
     res = parser.parse_args()
     PayMoney = res.pay_money
     WaitTime = res.wait_time
