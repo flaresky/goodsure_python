@@ -16,6 +16,9 @@ from time import sleep
 # Wrap sys.stdout into a StreamWriter to allow writing unicode.
 sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout) 
 br = mechanize.Browser()
+br.set_handle_equiv(False)
+br.set_handle_robots(False)
+br.set_handle_refresh(False)
 user_agent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A334 Safari/7534.48.3'
 br.addheaders = [('User-agent', user_agent)]
 FindInvestTime = 0
@@ -154,10 +157,11 @@ def find_investment():
                     if (TimeDuration == 0 or duration == TimeDuration) and lilv >= MinPerCent and percent < 100 and start_str == u'立即投标':
                         Gotya = True
                 if Gotya:
+                    FindInvestTime = time.time()
                     a = find_element(table, 'a')
                     link = a['href']
                     print_with_time('Find valid investment %s %.1f%% %d month, percent %.2f%%'%(title, lilv, duration, percent))
-                    br.open(link)
+                    br.open(link).read()
                     return
         print_with_time('Not found valid investment')
         check_run_time()
@@ -167,7 +171,7 @@ def submit_tender(tid=None):
     global LastSubmitTime
     tender_remain = sys.maxint
     if tid is not None:
-        br.open('http://www.goodsure.cn/invest/%d.html'%(tid))
+        br.open('http://www.goodsure.cn/invest/%d.html'%(tid)).read()
     url = br.geturl()
     while True:
 #         while time.time() - LastSubmitTime < 1:
@@ -190,9 +194,9 @@ def submit_tender(tid=None):
             break
         check_run_time()
         try:
-            br.back()
+            br.back().read()
         except:
-            br.open(url)
+            br.open(url).read()
 
 def wait_till_can_invest():
     global WaitTime
@@ -231,8 +235,10 @@ def main():
         submit_tender(Tid)
 
 def test():
+    global BorrowTypes
     parsearg()
 #     login()
+    BorrowTypes = [4]
     find_investment()
     #wait_till_can_invest()
 #     submit_tender()
