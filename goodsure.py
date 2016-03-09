@@ -101,14 +101,14 @@ def get_center_message(data):
 
 def get_balance(data):
     global PayMoney
-    if PayMoney == 0:
-        soup = BeautifulSoup(data)
-        balance = None
-        div = find_element(soup, 'div', {'class':'accounts-z'})
-        li = find_element(div, 'li')
-        span = find_element(li, 'span', None, 1)
-        balance = int(float(span.string))
-        if balance is not None:
+    soup = BeautifulSoup(data)
+    balance = None
+    div = find_element(soup, 'div', {'class':'accounts-z'})
+    li = find_element(div, 'li')
+    span = find_element(li, 'span', None, 1)
+    balance = int(float(span.string))
+    if balance is not None:
+        if PayMoney == 0 or PayMoney > balance:
             PayMoney = balance
     if PayMoney < 1:
         print_with_time("PayMoney=%d, will exit"%(PayMoney))
@@ -194,6 +194,7 @@ def submit_tender(tid=None):
             break
         check_run_time()
         try:
+            #之前的response要read，才能保证back不重新load
             br.back().read()
         except:
             br.open(url).read()
